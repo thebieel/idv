@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Distribuição Gaussiana com Outliers Destacados</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  canvas {
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+  }
+  .legenda {
+    margin-bottom: 12px;
+    font-weight: bold;
+  }
+  .cor-verde { color: green; }
+  .cor-vermelho { color: red; }
+  .cor-azul { color: blue; }
+</style>
+</head>
+<body>
+  <h2>Distribuição Gaussiana do Tempo das Chamadas</h2>
+  <div class="legenda">
+    <span class="cor-verde">● Chamadas Normais</span> | 
+    <span class="cor-vermelho">● Exceções (longas)</span> | 
+    <span class="cor-azul">● Exceções (curtas)</span>
+  </div>
+  <canvas id="grafico" width="850" height="400"></canvas>
+
+<script>
+  // Dados (tempo em segundos), exemplo seu dado removendo zeros:
+  const temposBrutos = [
+    8,0,12,248,0,171,3,304,0,144,246,179,141,12,135,266,186,212,89,0,
+    273,1,468,192,0,427,241,65,0,97,235,253,167,18,3,493,272,1,37,260,
+    142,181,221,74,16,7,211,81,335,369,235,114,28,4,112,28,180,369,438,
+    0,0,342,0,608,4,123,612,8,493,88,108,226,5,189,1082,4,26,134,336,
+    294,106,687,295,160,436,52,118,624,5,38,517,175,10,83,0,137,121,426,0
+  ];
+  
+  // Remove zeros
+  const tempos = temposBrutos.filter(v => v > 0);
+
+  // Funções média e desvio padrão
+  function media(arr) {
+    return arr.reduce((a,b) => a+b, 0) / arr.length;
+  }
+  function desvioPadrao(arr, med) {
+    return Math.sqrt(arr.reduce((acc,val) => acc + (val - med)**2, 0) / arr.length);
+  }
+
+  const med = media(tempos);
+  const dp = desvioPadrao(tempos, med);
+
+  // Definir limites para outliers (±3σ), com limite inferior mínimo 10s
+  const limiteInf = Math.max(10, med - 3*dp);
+  const limiteSup = med + 3*dp;
+
+  // Função densidade normal
+  function gaussiana(x, mu, sigma) {
+    return (1/(sigma * Math.sqrt(2*Math.PI))) * Math.exp(-0.5 * ((x - mu)/sigma)**2);
+  }
+
+  // Gerar pontos para curva Gaussiana
+  const pontos = 300;
+  const minX = 0;
+  const maxX = Math.max(...tempos) + dp*1.5;
+  const passo = (maxX - minX) / pontos;
+
+  const curvaX = [];
+  const curvaY = [];
+  for(let i=0; i <= pontos; i++) {
+    const x = minX + i*passo;
+    curvaX.push(x);
+    curvaY.push(gaussiana(x, med, dp));
+  }
+
+  // Normalizar curva para escala visual do gráfico
+  const maxY = Math.max(...curvaY);
+  const escalaY = dp * 3;
+  const curvaYScaled = curvaY.map(v => v / maxY * escalaY);
+
+  // Scatter dos pontos reais posicionados na curva
+  const scatterData = tempos.map(v => ({
+    x: v,
+    y: gaussiana(v, med, dp) / maxY * escalaY
+  }));
+
+  // Colorir outliers (vermelho: longas, azul: curtas) e normais (verde)
+  const scatterColors = scatterData.map(p => {
+    if(p.x > limiteSup) return 'red';        // Outlier para mais
+    else if(p.x < limiteInf) return 'blue'; // Outlier para menos
+    else return 'green';                     // Normal
+  });
+
+  // Tipo de exceção para tooltip
+  function tipoExcecao(x) {
+    if(x > limiteSup) return 'Exceção (longa)';
+    else if(x < limiteInf) return 'Exceção (curta)';
+    else return 'Normal';
+  }
+
+  const ctx = document.getElementById('grafico').getContext('2d');
+
+  new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'Curva Gaussiana (densidade)',
+          data: curvaX.map((x,i) => ({x: x, y: curvaYScaled[i]})),
+          type: 'line',
+          borderColor: 'blue',
+          borderWidth: 2,
+          fill: true,
+          backgroundColor: 'rgba(0, 123, 255, 0.2)',
+          pointRadius: 0,
+          order: 1,
+        },
+        {
+          label: 'Chamadas (normais/azul/vermelho = exceções)',
+          data: scatterData,
+          backgroundColor: scatterColors,
+          pointRadius: 5,
+          order: 2,
+          parsing: false,
+        },
+        {
+          label: 'Média',
+          data: [{x: med, y: escalaY}],
+          backgroundColor: 'orange',
+          pointStyle: 'rectRot',
+          pointRadius: 10,
+          order: 3,
+        },
+        {
+          label: '±1σ',
+          data: [
+            {x: med - dp, y: 0},
+            {x: med - dp, y: escalaY},
+            {x: med + dp, y: 0},
+            {x: med + dp, y: escalaY},
+          ],
+          type: 'line',
+          borderColor: 'orange',
+          borderDash: [6,4],
+          fill: false,
+          order: 4,
+        },
+        {
+          label: '±2σ',
+          data: [
+            {x: med - 2*dp, y: 0},
+            {x: med - 2*dp, y: escalaY},
+            {x: med + 2*dp, y: 0},
+            {x: med + 2*dp, y: escalaY},
+          ],
+          type: 'line',
+          borderColor: 'red',
+          borderDash: [6,4],
+          fill: false,
+          order: 5,
+        },
+        {
+          label: '±3σ',
+          data: [
+            {x: limiteInf, y: 0},
+            {x: limiteInf, y: escalaY},
+            {x: limiteSup, y: 0},
+            {x: limiteSup, y: escalaY},
+          ],
+          type: 'line',
+          borderColor: 'purple',
+          borderDash: [6,4],
+          fill: false,
+          order: 6,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          type: 'linear',
+          title: {display: true, text: 'Tempo das chamadas (segundos)'},
+          min: 0,
+          max: maxX + 20,
+        },
+        y: {
+          display: false,
+          min: 0,
+          max: escalaY + 2,
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if(ctx.dataset.label === 'Chamadas (normais/azul/vermelho = exceções)') {
+                const val = ctx.parsed.x.toFixed(0);
+                const tipo = tipoExcecao(ctx.parsed.x);
+                return `Tempo: ${val}s — ${tipo}`;
+              }
+              if(ctx.dataset.label === 'Média') {
+                return `Média: ${med.toFixed(2)}s`;
+              }
+              return null;
+            }
+          }
+        },
+        legend: {
+          labels: {
+            filter: item => !['±1σ', '±2σ', '±3σ'].includes(item.text)
+          }
+        }
+      }
+    }
+  });
+</script>
+</body>
+</html>
