@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<title>Distribuição Gaussiana com Outliers Destacados</title>
+<title>Distribuição Gaussiana</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   body {
@@ -46,6 +46,24 @@
   // Remove zeros
   const tempos = temposBrutos.filter(v => v > 0);
 
+
+  const agente = [
+    'Agente 1', 'Agente 2', 'Agente 3', 'Agente 4', 'Agente 5',
+    'Agente 6', 'Agente 7', 'Agente 8', 'Agente 9', 'Agente 10',
+    'Agente 11', 'Agente 12', 'Agente 13', 'Agente 14', 'Agente 15',
+    'Agente 16', 'Agente 17', 'Agente 18', 'Agente 19', 'Agente 20','Agente 21',
+    'Agente 22', 'Agente 23', 'Agente 24', 'Agente 25', 'Agente 26','Agente 27',
+    'Agente 28', 'Agente 29', 'Agente 30', 'Agente 31', 'Agente 32','Agente 33',
+    'Agente 34', 'Agente 35', 'Agente 36', 'Agente 37', 'Agente 38','Agente 39','Agente 40',
+    'Agente 41', 'Agente 42', 'Agente 43', 'Agente 44', 'Agente 45','Agente 46','Agente 47',
+    'Agente 48', 'Agente 49', 'Agente 50', 'Agente 51', 'Agente 52','Agente 53','Agente 54','Agente 55',
+    'Agente 56', 'Agente 57', 'Agente 58', 'Agente 59', 'Agente 60','Agente 61','Agente 62','Agente 63',
+    'Agente 64', 'Agente 65', 'Agente 66', 'Agente 67', 'Agente 68','Agente 69','Agente 70','Agente 71',
+    'Agente 72', 'Agente 73', 'Agente 74', 'Agente 75', 'Agente 76','Agente 77','Agente 78','Agente 79','Agente 80',
+    'Agente 81', 'Agente 82', 'Agente 83', 'Agente 84', 'Agente 85','Agente 86','Agente 87','Agente 88',
+    // Adicione mais agentes conforme necessário
+  ];
+
   // Funções média e desvio padrão
   function media(arr) {
     return arr.reduce((a,b) => a+b, 0) / arr.length;
@@ -86,9 +104,10 @@
   const curvaYScaled = curvaY.map(v => v / maxY * escalaY);
 
   // Scatter dos pontos reais posicionados na curva
-  const scatterData = tempos.map(v => ({
+  const scatterData = tempos.map((v, i) => ({
     x: v,
-    y: gaussiana(v, med, dp) / maxY * escalaY
+    y: gaussiana(v, med, dp) / maxY * escalaY,
+    agente: agente[i]
   }));
 
   // Colorir outliers (vermelho: longas, azul: curtas) e normais (verde)
@@ -201,15 +220,27 @@
         tooltip: {
           callbacks: {
             label: ctx => {
-              if(ctx.dataset.label === 'Chamadas (normais/azul/vermelho = exceções)') {
-                const val = ctx.parsed.x.toFixed(0);
+
+              const x =ctx.parsed.x !== undefined ? ctx.parsed.x.toFixed(0) : '';
+              const y = ctx.parsed.y !== undefined ? ctx.parsed.y.toFixed(0) : '';
+              const label = ctx.dataset.label;
+
+              if(label === 'Chamadas (normais/azul/vermelho = exceções)') {
                 const tipo = tipoExcecao(ctx.parsed.x);
-                return `Tempo: ${val}s — ${tipo}`;
+                const agente = ctx.raw.agente || 'Desconhecido';
+                return `Agente: ${agente}, Tempo: ${x}s — ${tipo}`;
               }
-              if(ctx.dataset.label === 'Média') {
-                return `Média: ${med.toFixed(2)}s`;
+              if(label === 'Média') {
+                return `Média: ${x}s`;
+              }
+              if(label === 'Curva Gaussiana (densidade)') {
+                return `Tempo: ${x}s`;
+              }
+              if(label === '±1σ' || label === '±2σ' || label === '±3σ') {
+                return `Tempo: ${x}s`;
               }
               return null;
+              
             }
           }
         },
