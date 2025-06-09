@@ -1,257 +1,206 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Distribuição Gaussiana</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 0 20px;
-  }
-  canvas {
-    background: #f9f9f9;
-    border: 1px solid #ccc;
-  }
-  .legenda {
-    margin-bottom: 12px;
-    font-weight: bold;
-  }
-  .cor-verde { color: green; }
-  .cor-vermelho { color: red; }
-  .cor-azul { color: blue; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
 </head>
 <body>
-  <h2>Distribuição Gaussiana do Tempo das Chamadas</h2>
-  <div class="legenda">
-    <span class="cor-verde">● Chamadas Normais</span> | 
-    <span class="cor-vermelho">● Exceções (longas)</span> | 
-    <span class="cor-azul">● Exceções (curtas)</span>
-  </div>
-  <canvas id="grafico" width="850" height="400"></canvas>
+    
+</body>
+</html>
+
+<canvas id="gaussChart"></canvas>
+
+<!-- Chart.js e plugin de anotações -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
 
 <script>
-  // Dados (tempo em segundos), exemplo seu dado removendo zeros:
-  const temposBrutos = [
-    8,0,12,248,0,171,3,304,0,144,246,179,141,12,135,266,186,212,89,0,
-    273,1,468,192,0,427,241,65,0,97,235,253,167,18,3,493,272,1,37,260,
-    142,181,221,74,16,7,211,81,335,369,235,114,28,4,112,28,180,369,438,
-    0,0,342,0,608,4,123,612,8,493,88,108,226,5,189,1082,4,26,134,336,
-    294,106,687,295,160,436,52,118,624,5,38,517,175,10,83,0,137,121,426,0
-  ];
-  
-  // Remove zeros
-  const tempos = temposBrutos.filter(v => v > 0);
-
-
-  const agente = [
-    'Agente 1', 'Agente 2', 'Agente 3', 'Agente 4', 'Agente 5',
-    'Agente 6', 'Agente 7', 'Agente 8', 'Agente 9', 'Agente 10',
-    'Agente 11', 'Agente 12', 'Agente 13', 'Agente 14', 'Agente 15',
-    'Agente 16', 'Agente 17', 'Agente 18', 'Agente 19', 'Agente 20','Agente 21',
-    'Agente 22', 'Agente 23', 'Agente 24', 'Agente 25', 'Agente 26','Agente 27',
-    'Agente 28', 'Agente 29', 'Agente 30', 'Agente 31', 'Agente 32','Agente 33',
-    'Agente 34', 'Agente 35', 'Agente 36', 'Agente 37', 'Agente 38','Agente 39','Agente 40',
-    'Agente 41', 'Agente 42', 'Agente 43', 'Agente 44', 'Agente 45','Agente 46','Agente 47',
-    'Agente 48', 'Agente 49', 'Agente 50', 'Agente 51', 'Agente 52','Agente 53','Agente 54','Agente 55',
-    'Agente 56', 'Agente 57', 'Agente 58', 'Agente 59', 'Agente 60','Agente 61','Agente 62','Agente 63',
-    'Agente 64', 'Agente 65', 'Agente 66', 'Agente 67', 'Agente 68','Agente 69','Agente 70','Agente 71',
-    'Agente 72', 'Agente 73', 'Agente 74', 'Agente 75', 'Agente 76','Agente 77','Agente 78','Agente 79','Agente 80',
-    'Agente 81', 'Agente 82', 'Agente 83', 'Agente 84', 'Agente 85','Agente 86','Agente 87','Agente 88',
-    // Adicione mais agentes conforme necessário
+  // Durações reais
+  const durations = [
+    "00:00:08", "00:00:00", "00:00:12", "00:04:08", "00:00:00", "00:02:51", "00:00:03",
+    "00:05:04", "00:00:00", "00:02:24", "00:04:06", "00:02:59", "00:02:21", "00:00:12",
+    "00:02:15", "00:04:26", "00:03:06", "00:03:32", "00:01:29", "00:00:00", "00:04:33",
+    "00:00:01", "00:07:48", "00:03:12", "00:00:00", "00:07:07", "00:04:01", "00:01:05",
+    "00:00:00", "00:01:37", "00:03:55", "00:04:13", "00:02:47", "00:00:18", "00:00:03",
+    "00:08:13", "00:04:32", "00:00:01", "00:00:37", "00:04:20", "00:02:22", "00:03:01",
+    "00:03:41", "00:01:14", "00:00:16", "00:00:07", "00:03:31", "00:01:21", "00:05:35"
   ];
 
-  // Funções média e desvio padrão
-  function media(arr) {
-    return arr.reduce((a,b) => a+b, 0) / arr.length;
-  }
-  function desvioPadrao(arr, med) {
-    return Math.sqrt(arr.reduce((acc,val) => acc + (val - med)**2, 0) / arr.length);
-  }
+  // Converter para segundos
+  const toSeconds = timeStr => {
+    const [hh, mm, ss] = timeStr.split(':').map(Number);
+    return hh * 3600 + mm * 60 + ss;
+  };
+  const callSeconds = durations.map(toSeconds);
 
-  const med = media(tempos);
-  const dp = desvioPadrao(tempos, med);
+  // Média e desvio padrão
+  const mean = callSeconds.reduce((sum, val) => sum + val, 0) / callSeconds.length;
+  const stdDev = Math.sqrt(callSeconds.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / callSeconds.length);
 
-  // Definir limites para outliers (±3σ), com limite inferior mínimo 10s
-  const limiteInf = Math.max(10, med - 3*dp);
-  const limiteSup = med + 3*dp;
-
-  // Função densidade normal
-  function gaussiana(x, mu, sigma) {
-    return (1/(sigma * Math.sqrt(2*Math.PI))) * Math.exp(-0.5 * ((x - mu)/sigma)**2);
+  // Distribuição normal
+  function normalDistribution(x, mean, stdDev) {
+    return (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / stdDev, 2));
   }
 
-  // Gerar pontos para curva Gaussiana
-  const pontos = 300;
+  // Geração de pontos
+  const xValues = [];
+  const yValues = [];
   const minX = 0;
-  const maxX = Math.max(...tempos) + dp*1.5;
-  const passo = (maxX - minX) / pontos;
-
-  const curvaX = [];
-  const curvaY = [];
-  for(let i=0; i <= pontos; i++) {
-    const x = minX + i*passo;
-    curvaX.push(x);
-    curvaY.push(gaussiana(x, med, dp));
+  const maxX = Math.ceil(mean + 3 * stdDev);
+  for (let x = minX; x <= maxX; x += 10) {
+    xValues.push(x);
+    yValues.push(normalDistribution(x, mean, stdDev));
   }
 
-  // Normalizar curva para escala visual do gráfico
-  const maxY = Math.max(...curvaY);
-  const escalaY = dp * 3;
-  const curvaYScaled = curvaY.map(v => v / maxY * escalaY);
+  // Formatar segundos como XmYs
+  const formatSeconds = s => {
+    const m = Math.floor(s / 60);
+    const ss = Math.floor(s % 60).toString().padStart(2, '0');
+    return `${m}m${ss}s`;
+  };
 
-  // Scatter dos pontos reais posicionados na curva
-  const scatterData = tempos.map((v, i) => ({
-    x: v,
-    y: gaussiana(v, med, dp) / maxY * escalaY,
-    agente: agente[i]
-  }));
-
-  // Colorir outliers (vermelho: longas, azul: curtas) e normais (verde)
-  const scatterColors = scatterData.map(p => {
-    if(p.x > limiteSup) return 'red';        // Outlier para mais
-    else if(p.x < limiteInf) return 'blue'; // Outlier para menos
-    else return 'green';                     // Normal
-  });
-
-  // Tipo de exceção para tooltip
-  function tipoExcecao(x) {
-    if(x > limiteSup) return 'Exceção (longa)';
-    else if(x < limiteInf) return 'Exceção (curta)';
-    else return 'Normal';
-  }
-
-  const ctx = document.getElementById('grafico').getContext('2d');
-
-  new Chart(ctx, {
-    type: 'scatter',
+  // Criar gráfico
+  new Chart(document.getElementById("gaussChart"), {
+    type: "line",
     data: {
-      datasets: [
-        {
-          label: 'Curva Gaussiana (densidade)',
-          data: curvaX.map((x,i) => ({x: x, y: curvaYScaled[i]})),
-          type: 'line',
-          borderColor: 'blue',
-          borderWidth: 2,
-          fill: true,
-          backgroundColor: 'rgba(0, 123, 255, 0.2)',
-          pointRadius: 0,
-          order: 1,
-        },
-        {
-          label: 'Chamadas (normais/azul/vermelho = exceções)',
-          data: scatterData,
-          backgroundColor: scatterColors,
-          pointRadius: 5,
-          order: 2,
-          parsing: false,
-        },
-        {
-          label: 'Média',
-          data: [{x: med, y: escalaY}],
-          backgroundColor: 'orange',
-          pointStyle: 'rectRot',
-          pointRadius: 10,
-          order: 3,
-        },
-        {
-          label: '±1σ',
-          data: [
-            {x: med - dp, y: 0},
-            {x: med - dp, y: escalaY},
-            {x: med + dp, y: 0},
-            {x: med + dp, y: escalaY},
-          ],
-          type: 'line',
-          borderColor: 'orange',
-          borderDash: [6,4],
-          fill: false,
-          order: 4,
-        },
-        {
-          label: '±2σ',
-          data: [
-            {x: med - 2*dp, y: 0},
-            {x: med - 2*dp, y: escalaY},
-            {x: med + 2*dp, y: 0},
-            {x: med + 2*dp, y: escalaY},
-          ],
-          type: 'line',
-          borderColor: 'red',
-          borderDash: [6,4],
-          fill: false,
-          order: 5,
-        },
-        {
-          label: '±3σ',
-          data: [
-            {x: limiteInf, y: 0},
-            {x: limiteInf, y: escalaY},
-            {x: limiteSup, y: 0},
-            {x: limiteSup, y: escalaY},
-          ],
-          type: 'line',
-          borderColor: 'purple',
-          borderDash: [6,4],
-          fill: false,
-          order: 6,
-        }
-      ]
+      labels: xValues,
+      datasets: [{
+        label: `Distribuição das Durações (μ ≈ ${formatSeconds(mean)}, σ ≈ ${formatSeconds(stdDev)})`,
+        data: yValues.map((y, i) => ({ x: xValues[i], y })),
+        borderColor: "green",
+        backgroundColor: "rgba(0,128,0,0.1)",
+        fill: true,
+        tension: 0.4
+      }]
     },
     options: {
       responsive: true,
-      scales: {
-        x: {
-          type: 'linear',
-          title: {display: true, text: 'Tempo das chamadas (segundos)'},
-          min: 0,
-          max: maxX + 20,
-        },
-        y: {
-          display: false,
-          min: 0,
-          max: escalaY + 2,
-        }
-      },
       plugins: {
         tooltip: {
           callbacks: {
-            label: ctx => {
-
-              const x =ctx.parsed.x !== undefined ? ctx.parsed.x.toFixed(0) : '';
-              const y = ctx.parsed.y !== undefined ? ctx.parsed.y.toFixed(0) : '';
-              const label = ctx.dataset.label;
-
-              if(label === 'Chamadas (normais/azul/vermelho = exceções)') {
-                const tipo = tipoExcecao(ctx.parsed.x);
-                const agente = ctx.raw.agente || 'Desconhecido';
-                return `Agente: ${agente}, Tempo: ${x}s — ${tipo}`;
-              }
-              if(label === 'Média') {
-                return `Média: ${x}s`;
-              }
-              if(label === 'Curva Gaussiana (densidade)') {
-                return `Tempo: ${x}s`;
-              }
-              if(label === '±1σ' || label === '±2σ' || label === '±3σ') {
-                return `Tempo: ${x}s`;
-              }
-              return null;
-              
-            }
+            title: (ctx) => `Tempo: ${formatSeconds(ctx[0].parsed.x)}`
           }
         },
-        legend: {
-          labels: {
-            filter: item => !['±1σ', '±2σ', '±3σ'].includes(item.text)
+        annotation: {
+          annotations: {
+            mean: {
+              type: 'line',
+              xMin: mean,
+              xMax: mean,
+              borderColor: 'blue',
+              borderWidth: 2,
+              borderDash: [6, 6],
+              label: {
+                content: 'μ',
+                enabled: true,
+                position: 'top'
+              }
+            },
+            std1pos: {
+              type: 'line',
+              xMin: mean + stdDev,
+              xMax: mean + stdDev,
+              borderColor: 'orange',
+              borderDash: [4, 4],
+              borderWidth: 1,
+              label: {
+                content: '+1σ',
+                enabled: true,
+                position: 'top'
+              }
+            },
+            std1neg: {
+              type: 'line',
+              xMin: mean - stdDev,
+              xMax: mean - stdDev,
+              borderColor: 'orange',
+              borderDash: [4, 4],
+              borderWidth: 1,
+              label: {
+                content: '-1σ',
+                enabled: true,
+                position: 'top'
+              }
+            },
+            std2pos: {
+              type: 'line',
+              xMin: mean + 2 * stdDev,
+              xMax: mean + 2 * stdDev,
+              borderColor: 'red',
+              borderDash: [2, 4],
+              borderWidth: 1,
+              label: {
+                content: '+2σ',
+                enabled: true,
+                position: 'top'
+              }
+            },
+            std2neg: {
+              type: 'line',
+              xMin: mean - 2 * stdDev,
+              xMax: mean - 2 * stdDev,
+              borderColor: 'red',
+              borderDash: [2, 4],
+              borderWidth: 1,
+              label: {
+                content: '-2σ',
+                enabled: true,
+                position: 'top'
+              }
+            },
+            std3pos: {
+              type: 'line',
+              xMin: mean + 3 * stdDev,
+              xMax: mean + 3 * stdDev,
+              borderColor: 'purple',
+              borderDash: [2, 2],
+              borderWidth: 1,
+              label: {
+                content: '+3σ',
+                enabled: true,
+                position: 'top'
+              }
+            },
+            std3neg: {
+              type: 'line',
+              xMin: mean - 3 * stdDev,
+              xMax: mean - 3 * stdDev,
+              borderColor: 'purple',
+              borderDash: [2, 2],
+              borderWidth: 1,
+              label: {
+                content: '-3σ',
+                enabled: true,
+                position: 'top'
+              }
+            }
           }
         }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          min: 0,
+          title: {
+            display: true,
+            text: "Duração das Chamadas"
+          },
+          ticks: {
+            callback: value => formatSeconds(value)
+          }
+        },
+        y: {
+            min: 0,
+          title: {
+            display: true,
+            text: "Densidade"
+          },
+          beginAtZero: true
+        }
       }
-    }
+    },
+    plugins: [Chart.registry.getPlugin('annotation')]
   });
 </script>
-</body>
-</html>
